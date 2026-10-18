@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fff">
+  <meta name="description" content="대칭이동으로 길을 만들고 졸라맨을 목적지까지 보내는 수학 퍼즐">
+  <title>SYMMETRY SHIFT</title>
+  <style>
+    :root { font-family: Inter, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; color: #171717; background: #fff; font-synthesis: none; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; min-height: 100svh; display: grid; place-items: center; padding: 0; }
+    [hidden] { display: none !important; }
+    .menu { width: min(1080px, 100%); min-height: 100vh; min-height: 100svh; padding: 34px 28px; display: flex; flex-direction: column; justify-content: center; }
+    .menu-head { min-height: 230px; position: relative; display: flex; justify-content: center; align-items: center; }
+    .menu-title { margin: 0; font-size: 24px; font-weight: 500; letter-spacing: -.02em; }
+    .unlock-note { position: absolute; right: 3%; top: 0; margin: 0; font-size: 22px; line-height: 1.55; font-weight: 400; }
+    .stage-grid { display: grid; grid-template-columns: repeat(6, minmax(50px, 110px)); justify-content: center; gap: 42px 34px; }
+    .stage-button { grid-column: span 2; height: 58px; border: 2px solid #171717; border-radius: 3px; background: white; color: #171717; font: inherit; font-size: 17px; cursor: pointer; }
+    .stage-button:hover:not(:disabled) { background: #f5f5f5; }
+    .stage-button:disabled { color: #999; border-color: #bdbdbd; cursor: default; }
+    .stage-button:nth-child(4) { grid-column: 2 / span 2; }
+    .stage-button:nth-child(5) { grid-column: 4 / span 2; }
+    .coming { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 22px; }
+    .coming h1 { font-size: 24px; font-weight: 500; }
+    .back-button, .reset { appearance: none; padding: 10px 18px; border: 1px solid #888; border-radius: 2px; background: white; color: inherit; font: inherit; cursor: pointer; }
+    .back-button:hover, .reset:hover { background: #f5f5f5; }
+    .game { width: min(1080px, 100%); padding: 26px; }
+    h1 { font-size: 23px; font-weight: 550; letter-spacing: -.04em; margin: 0 0 17px 2px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 215px; gap: 22px; align-items: stretch; }
+    .board { min-width: 0; width: min(100%, calc(100svh - 160px)); aspect-ratio: 1; justify-self: center; border: 1px solid #dedede; background: white; }
+    svg { width: 100%; height: 100%; display: block; }
+    #board { touch-action: manipulation; }
+    #board:focus { outline: none; }
+    .controls { border-top: 1px solid #171717; display: flex; flex-direction: column; }
+    h2 { font-size: 15px; font-weight: 500; margin: 0; padding: 13px 2px 12px; }
+    .transform { appearance: none; background: white; color: inherit; border: 0; border-top: 1px solid #171717; min-height: 55px; padding: 14px 11px; text-align: left; font: inherit; font-size: 15px; cursor: pointer; }
+    .transform:hover:not(:disabled) { background: #f4f4f4; }
+    .transform:disabled { color: #aaa; cursor: default; }
+    button:focus-visible { outline: 2px solid #777; outline-offset: 2px; position: relative; z-index: 1; }
+    .hint { margin: 17px 0 10px; color: #666; font-size: 13px; line-height: 1.75; }
+    .status { min-height: 42px; margin-top: 12px; color: #333; font-size: 13px; line-height: 1.6; }
+    .reset { width: 100%; margin-top: 16px; font-size: 13px; }
+    .gridline { stroke: #ededed; stroke-width: 1; }
+    .axis { stroke: #171717; stroke-width: 2; }
+    .tick { stroke: #777; stroke-width: 1; }
+    .number { fill: #777; font-size: 11px; text-anchor: middle; dominant-baseline: middle; }
+    .platform { stroke: #171717; stroke-width: 4; stroke-linecap: round; pointer-events: none; }
+    .shape-hit { stroke: transparent; stroke-width: 28; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: pointer; }
+    .selected { stroke-width: 6; }
+    .goal { fill: white; stroke: #171717; stroke-width: 2.5; }
+    .goal-core { fill: #171717; }
+    .figure-line { stroke: #111; stroke-width: 2.5; stroke-linecap: round; fill: none; }
+    .figure-head { fill: #111; }
+    .win { font-weight: 600; }
+    button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    .touch-controls { display: none; position: fixed; inset: auto 0 0; z-index: 10; align-items: center; justify-content: space-between; gap: 16px; padding: 10px max(16px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); border-top: 1px solid #dedede; background: #fff; touch-action: none; -webkit-user-select: none; user-select: none; }
+    .touch-directions { display: flex; gap: 12px; }
+    .touch-button { appearance: none; width: 66px; height: 56px; padding: 0; border: 1px solid #171717; border-radius: 2px; background: #fff; color: #171717; font: inherit; font-size: 23px; touch-action: none; -webkit-touch-callout: none; }
+    .touch-button.is-pressed { color: #fff; background: #171717; }
+    .touch-jump { width: 92px; font-size: 17px; }
+    @media (any-pointer: coarse), (max-width: 850px) {
+      .game { padding: max(14px, env(safe-area-inset-top)) 16px calc(94px + env(safe-area-inset-bottom)); }
+      .board { width: min(100%, calc(100svh - 160px)); }
+      .touch-controls:not([hidden]) { display: flex; }
+    }
+    @media (max-width: 850px) and (orientation: portrait) {
+      .game { padding: max(12px, env(safe-area-inset-top)) 12px calc(90px + env(safe-area-inset-bottom)); }
+      .layout { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+      .board { width: min(100%, max(180px, calc(100svh - 306px - env(safe-area-inset-bottom) - env(safe-area-inset-top)))); }
+      .controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 0; align-content: start; }
+      .controls h2 { grid-column: 1 / -1; padding: 6px 2px; font-size: 13px; }
+      .transform { min-height: 44px; padding: 10px; font-size: 14px; }
+      .transform:nth-of-type(even) { border-left: 1px solid #ddd; }
+      .status { align-self: center; min-height: 0; margin: 8px 4px 0; }
+      .reset { min-height: 40px; margin-top: 8px; padding: 8px; }
+    }
+    @media (max-width: 650px) {
+      .menu { padding: 18px 14px; }
+      .menu-head { min-height: 190px; }
+      .menu-title { font-size: 20px; }
+      .unlock-note { right: 0; font-size: 16px; }
+      .stage-grid { grid-template-columns: repeat(6, minmax(32px, 70px)); gap: 28px 12px; }
+      .stage-button { height: 48px; font-size: 14px; }
+      h1 { font-size: 20px; margin-bottom: 12px; }
+      .hint, .status { font-size: 12px; }
+    }
+    @media (max-height: 600px) and (orientation: landscape) {
+      .game { padding: max(8px, env(safe-area-inset-top)) 12px calc(86px + env(safe-area-inset-bottom)); }
+      h1 { margin-bottom: 8px; font-size: 18px; }
+      .layout { grid-template-columns: minmax(0, 1fr) minmax(200px, 260px); gap: 12px; }
+      .board { width: min(100%, max(150px, calc(100svh - 136px - env(safe-area-inset-bottom)))); }
+      .controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 0; align-content: start; }
+      .controls h2 { grid-column: 1 / -1; padding: 6px 2px; font-size: 13px; }
+      .transform { min-height: 44px; padding: 8px; font-size: 13px; }
+      .transform:nth-of-type(even) { border-left: 1px solid #ddd; }
+      .status { align-self: center; min-height: 0; margin: 8px 4px 0; }
+      .reset { min-height: 40px; margin-top: 8px; padding: 8px; }
+    }
+    @media (any-pointer: coarse) and (orientation: landscape) {
+      .game { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+    }
+    @media (any-pointer: coarse) {
+      .menu { padding-top: max(18px, env(safe-area-inset-top)); padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+    }
+  </style>
+</head>
+<body>
+  <section class="menu" id="menu">
+    <header class="menu-head">
+      <h1 class="menu-title">SYMMETRY SHIFT</h1>
+      <p class="unlock-note">전 스테이지를<br>깨야 풀림</p>
+    </header>
+    <nav class="stage-grid" id="stage-grid" aria-label="스테이지 선택"></nav>
+  </section>
+  <section class="coming" id="coming" hidden>
+    <h1 id="coming-title">stage2 준비 중</h1>
+    <button class="back-button" id="back-to-menu">돌아가기</button>
+  </section>
+  <main class="game" id="game" hidden>
+    <h1 id="game-title">stage1</h1>
+    <div class="layout">
+      <div class="board">
+        <svg id="board" tabindex="0" viewBox="0 0 600 600" role="img" aria-label="대칭이동 퍼즐 좌표평면">
+          <g id="grid"></g>
+          <line class="axis" x1="60" y1="300" x2="540" y2="300" />
+          <line class="axis" x1="300" y1="60" x2="300" y2="540" />
+          <g id="ticks"></g>
+          <g id="geometry"></g>
+          <g id="goal-markers"><circle class="goal" cx="492" cy="300" r="9" /><circle class="goal-core" cx="492" cy="300" r="3" /></g>
+          <g id="player" transform="translate(300 300)" aria-label="졸라맨 시작 위치">
+            <circle class="figure-head" cx="0" cy="-21" r="3.4" />
+            <path class="figure-line" d="M0 -17 L0 -8 M0 -14 L-4 -10 M0 -14 L4 -10 M0 -8 L-3 0 M0 -8 L3 0" />
+          </g>
+        </svg>
+      </div>
+      <aside class="controls" aria-label="게임 조작">
+        <h2>대칭 이동</h2>
+        <button class="transform" data-transform="x" disabled>x축 대칭</button>
+        <button class="transform" data-transform="y" disabled>y축 대칭</button>
+        <button class="transform" data-transform="o" disabled>원점 대칭</button>
+        <button class="transform" data-transform="d" disabled>y = x 대칭</button>
+        <div class="status" id="status" aria-live="polite"></div>
+        <button class="reset" id="reset" type="button">다시 시작</button>
+      </aside>
+    </div>
+  </main>
+  <div class="touch-controls" id="touch-controls" role="group" aria-label="터치 이동 조작" hidden>
+    <div class="touch-directions">
+      <button class="touch-button" type="button" data-control="left" aria-label="왼쪽으로 이동" aria-pressed="false">←</button>
+      <button class="touch-button" type="button" data-control="right" aria-label="오른쪽으로 이동" aria-pressed="false">→</button>
+    </div>
+    <button class="touch-button touch-jump" type="button" data-control="jump" aria-label="점프" aria-pressed="false">점프</button>
+  </div>
+  <script src="physics.js?v=touch1"></script>
+  <script src="game.js?v=touch1"></script>
+</body>
+</html>
+
